@@ -1,0 +1,48 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    implementation 'com.google.guava:guava:28.0-jre'
+    implementation 'org.apache.commons:commons-lang3:3.0'
+    testImplementation 'junit:junit:4.12'
+    testCompile "org.mockito:mockito-core:2.+"
+}
+
+application {
+    mainClassName = 'dev.houshce29.gitout.Gitout'
+}
+
+// Modify the start scripts to pass in the current location
+startScripts {
+    def inject = { separator, after, injection, line ->
+        if (line.trim().startsWith(after)) {
+            // Modify the current line to include the injected string
+            line += separator + injection
+        }
+        else {
+            line
+        }
+    }
+
+    // Define part of the closures
+    def windowsInjection = inject.curry('\r\n', ':execute', 'set CMD_LINE_ARGS=%cd% %CMD_LINE_ARGS%')
+    def unixInjection = inject.curry('\n', '#!/usr/bin/env sh', 'eval set "$PWD $@"')
+
+    doLast {
+        windowsScript.text = windowsScript
+                .readLines()
+                .collect(windowsInjection)
+                .join('\r\n')
+
+        unixScript.text = unixScript
+                .readLines()
+                .collect(unixInjection)
+                .join('\n')
+    }
+}
